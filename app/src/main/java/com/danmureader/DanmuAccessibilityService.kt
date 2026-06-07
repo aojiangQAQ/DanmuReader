@@ -38,9 +38,9 @@ class DanmuAccessibilityService : AccessibilityService() {
     private var isRunning = false
     private var lastProcessTime = 0L
     private val processInterval = 200L
-    private var eventCount = 0L
-    private var lastLogTime = 0L
-    private var isOnLivePage = false
+
+
+
     private var danmuReadTotal = 0L
     private var danmuSkipped = 0L
 
@@ -113,7 +113,7 @@ class DanmuAccessibilityService : AccessibilityService() {
         val now = System.currentTimeMillis()
         if (now - lastProcessTime < processInterval) return
         lastProcessTime = now
-        eventCount++
+
 
         try {
             val packageName = event.packageName?.toString() ?: return
@@ -121,20 +121,7 @@ class DanmuAccessibilityService : AccessibilityService() {
 
             val rootNode = rootInActiveWindow ?: return
 
-            // 检查是否在直播页面
-            val currentActivity = event.className?.toString() ?: ""
-            isOnLivePage = currentActivity.contains(DOUYIN_LIVE_ACTIVITY_OLD) || currentActivity.contains(DOUYIN_LIVE_ACTIVITY_NEW)
-
-            if (now - lastLogTime > 10000) {
-                lastLogTime = now
-                if (isOnLivePage) {
-                    AppLogger.d(TAG, "直播页面运行中 | 事件:$eventCount | 已读:$danmuReadTotal | 跳过:$danmuSkipped")
-                } else {
-                    AppLogger.d(TAG, "非直播页面 ($currentActivity)")
-                }
-            }
-
-            if (!isOnLivePage) return
+            // 不再检测页面，直接查找弹幕控件
 
             // 检查是否有弹出面板（表情、礼物等）
             if (isPopupPanelOpen(rootNode)) {
