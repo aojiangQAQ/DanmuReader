@@ -9,9 +9,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp">
+        android:padding="20dp">
 
-        <!-- 标题栏 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -24,7 +23,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:text="←"
-                android:textSize="20sp"
+                android:textSize="22sp"
                 android:textColor="@color/text_primary"
                 android:gravity="center"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
@@ -36,149 +35,135 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="设置"
-                android:textSize="22sp"
+                android:textSize="20sp"
                 android:textColor="@color/text_primary"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_marginEnd="40dp" />
         </LinearLayout>
 
-        <!-- 福袋/刷屏屏蔽开关 -->
-        <androidx.cardview.widget.CardView
+        <!-- 福袋屏蔽 -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/bg_card"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            android:layout_marginBottom="12dp">
+            android:orientation="horizontal"
+            android:background="@drawable/bg_card_rounded"
+            android:padding="14dp"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="10dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:text="屏蔽福袋刷屏"
+                    android:textSize="15sp"
+                    android:textColor="@color/text_primary" />
 
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="屏蔽福袋刷屏"
-                            android:textSize="16sp"
-                            android:textColor="@color/text_primary" />
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="同一内容10秒内出现3次以上自动跳过"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginTop="2dp" />
-                    </LinearLayout>
-
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/switchSpamFilter"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:checked="true" />
-                </LinearLayout>
-
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="相同内容10秒内出现3次以上自动跳过"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_dim"
+                    android:layout_marginTop="2dp" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/switchSpamFilter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
 
         <!-- 自定义屏蔽词 -->
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/bg_card"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
-            android:layout_marginBottom="12dp">
+            android:orientation="vertical"
+            android:background="@drawable/bg_card_rounded"
+            android:padding="14dp"
+            android:layout_marginBottom="10dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="自定义屏蔽词"
+                android:textSize="15sp"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="包含屏蔽词的弹幕不会被朗读，点击词可删除"
+                android:textSize="11sp"
+                android:textColor="@color/text_dim"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="10dp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="自定义屏蔽词"
-                    android:textSize="16sp"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="包含屏蔽词的弹幕不会被朗读"
-                    android:textSize="12sp"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginBottom="12dp" />
-
-                <!-- 添加屏蔽词输入框 -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="12dp">
-
-                    <EditText
-                        android:id="@+id/etNewWord"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:hint="输入屏蔽词"
-                        android:textSize="14sp"
-                        android:textColor="@color/text_primary"
-                        android:textColorHint="@color/text_secondary"
-                        android:background="@drawable/bg_input"
-                        android:paddingHorizontal="12dp"
-                        android:singleLine="true"
-                        android:layout_marginEnd="8dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAddWord"
-                        android:layout_width="wrap_content"
-                        android:layout_height="44dp"
-                        android:text="添加"
-                        android:textSize="14sp"
-                        app:cornerRadius="8dp"
-                        app:backgroundTint="@color/accent_green"
-                        android:textColor="@color/black" />
-                </LinearLayout>
-
-                <!-- 屏蔽词列表 -->
-                <TextView
-                    android:id="@+id/tvWordList"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="暂无屏蔽词"
+                <EditText
+                    android:id="@+id/etNewWord"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_weight="1"
+                    android:hint="输入屏蔽词"
                     android:textSize="14sp"
-                    android:textColor="@color/text_secondary"
-                    android:lineSpacingExtra="4dp" />
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_dim"
+                    android:background="@drawable/bg_input"
+                    android:paddingHorizontal="12dp"
+                    android:singleLine="true"
+                    android:layout_marginEnd="8dp" />
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="点击屏蔽词可删除"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginTop="8dp" />
-
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddWord"
+                    android:layout_width="wrap_content"
+                    android:layout_height="40dp"
+                    android:text="添加"
+                    android:textSize="13sp"
+                    app:cornerRadius="8dp"
+                    app:backgroundTint="@color/accent_green"
+                    android:textColor="@color/black" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+
+            <!-- 屏蔽词标签流式布局 -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupWords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                app:singleLine="false" />
+
+            <TextView
+                android:id="@+id/tvNoWords"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="暂无屏蔽词"
+                android:textSize="13sp"
+                android:textColor="@color/text_dim"
+                android:gravity="center"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+        <!-- 作者 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="曙光团队 · 鳌江"
+            android:textSize="12sp"
+            android:textColor="@color/text_dim"
+            android:gravity="center"
+            android:layout_marginTop="20dp" />
 
     </LinearLayout>
 </ScrollView>

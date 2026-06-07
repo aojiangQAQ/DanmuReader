@@ -8,9 +8,15 @@
     <color name="black">#FF000000</color>
     <color name="bg_card">#FF1E1E2E</color>
     <color name="bg_main">#FF11111B</color>
+    <color name="bg_card_light">#FF282840</color>
     <color name="accent_green">#FFA6E3A1</color>
     <color name="accent_red">#FFF38BA8</color>
     <color name="accent_blue">#FF89B4FA</color>
+    <color name="accent_yellow">#FFF9E2AF</color>
+    <color name="accent_overlay">#CC11111B</color>
     <color name="text_primary">#FFCDD6F4</color>
     <color name="text_secondary">#FFA6ADC8</color>
+    <color name="text_dim">#FF6C7086</color>
+    <color name="divider">#22FFFFFF</color>
+    <color name="drag_handle">#33A6E3A1</color>
 </resources>
