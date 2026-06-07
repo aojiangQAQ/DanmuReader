@@ -142,13 +142,10 @@ class MainActivity : AppCompatActivity() {
 
         val ttsManager = TtsManager(this)
 
-        // 先用 PackageManager 列出已安装的 TTS 引擎
+        // 先用 PackageManager 列出已安装的 TTS 引擎（仅作日志参考）
         val installed = ttsManager.listInstalledEngines()
-        if (installed.isNotEmpty()) {
-            AppLogger.i("MainActivity", "系统发现 ${installed.size} 个TTS引擎: ${installed.joinToString { it.first }}")
-        } else {
-            AppLogger.w("MainActivity", "系统中未发现任何TTS引擎")
-        }
+        AppLogger.i("MainActivity", "PackageManager 扫描到 ${installed.size} 个TTS引擎")
+        // 无论是否查到，都继续尝试实际初始化 TTS
 
         ttsManager.checkEngineStatus { code, message ->
             handler.post {

@@ -85,13 +85,13 @@ class TtsManager(private val context: Context) {
         // 第一步: 用 PackageManager 检测已安装的 TTS 引擎
         val engines = listInstalledEngines()
 
-        if (engines.isEmpty()) {
-            callback(1, "手机未安装任何语音引擎，请先安装一个")
-            return
+        val engineNames = if (engines.isNotEmpty()) {
+            engines.joinToString(", ") { it.first }
+        } else {
+            "未知(包可见性限制)"
         }
-
-        val engineNames = engines.joinToString(", ") { it.first }
-        AppLogger.i(TAG, "共发现 ${engines.size} 个引擎: $engineNames")
+        AppLogger.i(TAG, "PackageManager 发现 ${engines.size} 个引擎: $engineNames")
+        // 不管有没有查到引擎列表，都继续尝试初始化（兜底）
 
         // 第二步: 尝试实际初始化 TTS 引擎，验证是否可用
         val appContext = context.applicationContext

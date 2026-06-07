@@ -6,6 +6,29 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 声明需要查询 TTS 服务，解决 Android 11+ 包可见性限制 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+        <!-- 也查询 TTS 数据检查 -->
+        <intent>
+            <action android:name="android.speech.tts.engine.CHECK_TTS_DATA" />
+        </intent>
+        <!-- 常见 TTS 引擎包名，确保能被发现 -->
+        <package android:name="com.google.android.tts" />
+        <package android:name="com.github.olga_yakovleva.RhVoice.android" />
+        <package android:name="com.iflytek.vflynote" />
+        <package android:name="com.iflytek.speechcloud" />
+        <package android:name="com.svox.pico" />
+        <!-- 国产手机常见内置 TTS -->
+        <package android:name="com.miui.tsmclient" />
+        <package android:name="com.huawei.speech" />
+        <package android:name="com.heytap.speechassist" />
+        <package android:name="com.samsung.android.tts" />
+        <package android:name="com.vivo.speechassist" />
+    </queries>
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
