@@ -168,40 +168,44 @@ class FloatingWindowManager(private val context: Context) {
     }
 
     private fun setupDragListener(params: WindowManager.LayoutParams) {
-        floatingView?.setOnTouchListener(object : View.OnTouchListener {
-            private var initialX = 0
-            private var initialY = 0
-            private var initialTouchX = 0f
-            private var initialTouchY = 0f
-            private var isDragging = false
+        // 在展开和折叠布局上分别设置拖拽监听
+        val dragTargets = listOfNotNull(layoutExpanded, layoutCollapsed)
+        for (target in dragTargets) {
+            target.setOnTouchListener(object : View.OnTouchListener {
+                private var initialX = 0
+                private var initialY = 0
+                private var initialTouchX = 0f
+                private var initialTouchY = 0f
+                private var isDragging = false
 
-            override fun onTouch(v: View, event: MotionEvent): Boolean {
-                when (event.action) {
-                    MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x; initialY = params.y
-                        initialTouchX = event.rawX; initialTouchY = event.rawY
-                        isDragging = false
-                        return true
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        val dx = event.rawX - initialTouchX
-                        val dy = event.rawY - initialTouchY
-                        if (dx * dx + dy * dy > 25) isDragging = true
-                        if (isDragging) {
-                            params.x = initialX + dx.toInt()
-                            params.y = initialY + dy.toInt()
-                            windowManager?.updateViewLayout(floatingView, params)
+                override fun onTouch(v: View, event: MotionEvent): Boolean {
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            initialX = params.x; initialY = params.y
+                            initialTouchX = event.rawX; initialTouchY = event.rawY
+                            isDragging = false
+                            return false  // 不消费，让子view也能收到
                         }
-                        return true
+                        MotionEvent.ACTION_MOVE -> {
+                            val dx = event.rawX - initialTouchX
+                            val dy = event.rawY - initialTouchY
+                            if (dx * dx + dy * dy > 100) isDragging = true
+                            if (isDragging) {
+                                params.x = initialX + dx.toInt()
+                                params.y = initialY + dy.toInt()
+                                windowManager?.updateViewLayout(floatingView, params)
+                                return true
+                            }
+                            return false
+                        }
+                        MotionEvent.ACTION_UP -> {
+                            return isDragging  // 只在拖拽时消费，否则让子view处理点击
+                        }
                     }
-                    MotionEvent.ACTION_UP -> {
-                        if (!isDragging) v.performClick()
-                        return true
-                    }
+                    return false
                 }
-                return false
-            }
-        })
+            })
+        }
     }
 
     fun updateDanmuCount(count: Long) {
