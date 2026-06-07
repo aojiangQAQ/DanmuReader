@@ -9,32 +9,32 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.TextView
 
-/**
- * 悬浮窗管理器
- * 提供一个可拖拽的悬浮控制面板
- */
 class FloatingWindowManager(private val context: Context) {
 
     private var windowManager: WindowManager? = null
     private var floatingView: View? = null
     private var isShowing = false
+    private var isCollapsed = false
     private var ttsManager: TtsManager? = null
+    private var service: DanmuAccessibilityService? = null
 
     private var tvDanmuCount: TextView? = null
+    private var tvSkippedCount: TextView? = null
     private var tvSpeed: TextView? = null
     private var btnPlayPause: ImageButton? = null
+    private var layoutExpanded: LinearLayout? = null
+    private var layoutCollapsed: LinearLayout? = null
+    private var tvCollapsedInfo: TextView? = null
 
-    fun setTtsManager(manager: TtsManager) {
-        ttsManager = manager
-    }
+    fun setTtsManager(manager: TtsManager) { ttsManager = manager }
+    fun setService(svc: DanmuAccessibilityService) { service = svc }
 
     fun show() {
         if (isShowing) return
-
         windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
         val inflater = LayoutInflater.from(context)
         floatingView = inflater.inflate(R.layout.layout_floating_control, null)
 
@@ -59,7 +59,6 @@ class FloatingWindowManager(private val context: Context) {
 
         initViews()
         setupDragListener(params)
-
         windowManager?.addView(floatingView, params)
         isShowing = true
     }
@@ -67,20 +66,39 @@ class FloatingWindowManager(private val context: Context) {
     private fun initViews() {
         floatingView?.let { view ->
             tvDanmuCount = view.findViewById(R.id.tvDanmuCount)
+            tvSkippedCount = view.findViewById(R.id.tvSkippedCount)
             tvSpeed = view.findViewById(R.id.tvSpeed)
             btnPlayPause = view.findViewById(R.id.btnPlayPause)
             val btnSpeedUp = view.findViewById<ImageButton>(R.id.btnSpeedUp)
             val btnSpeedDown = view.findViewById<ImageButton>(R.id.btnSpeedDown)
+            val btnSkipLatest = view.findViewById<View>(R.id.btnSkipLatest)
+            val btnToggle = view.findViewById<View>(R.id.btnToggle)
+            val btnToggleCollapsed = view.findViewById<View>(R.id.btnToggleCollapsed)
+            layoutExpanded = view.findViewById(R.id.layoutExpanded)
+            layoutCollapsed = view.findViewById(R.id.layoutCollapsed)
+            tvCollapsedInfo = view.findViewById(R.id.tvCollapsedInfo)
 
-            btnPlayPause?.setOnClickListener {
+            // 折叠/展开按钮
+            btnToggle?.setOnClickListener { toggleCollapse() }
+            btnToggleCollapsed?.setOnClickListener { toggleCollapse() }
+
+            // 折叠状态的播放/暂停
+            val btnCollapsedPlayPause = view.findViewById<View>(R.id.btnCollapsedPlayPause)
+            btnCollapsedPlayPause?.setOnClickListener {
                 ttsManager?.let { tts ->
                     if (tts.isPaused()) {
                         tts.resume()
-                        btnPlayPause?.setImageResource(android.R.drawable.ic_media_pause)
                     } else {
                         tts.pause()
-                        btnPlayPause?.setImageResource(android.R.drawable.ic_media_play)
                     }
+                    updatePlayPauseIcon()
+                }
+            }
+
+            btnPlayPause?.setOnClickListener {
+                ttsManager?.let { tts ->
+                    if (tts.isPaused()) tts.resume() else tts.pause()
+                    updatePlayPauseIcon()
                 }
             }
 
@@ -98,8 +116,55 @@ class FloatingWindowManager(private val context: Context) {
                 }
             }
 
+            btnSkipLatest?.setOnClickListener {
+                service?.skipToLatest()
+            }
+
             tvSpeed?.text = "%.2fx".format(ttsManager?.getCurrentSpeed() ?: 1.5f)
+
+            // 默认展开
+            isCollapsed = false
+            layoutExpanded?.visibility = View.VISIBLE
+            layoutCollapsed?.visibility = View.GONE
         }
+    }
+
+    private fun toggleCollapse() {
+        isCollapsed = !isCollapsed
+        if (isCollapsed) {
+            layoutExpanded?.visibility = View.GONE
+            layoutCollapsed?.visibility = View.VISIBLE
+            updateCollapsedInfo()
+        } else {
+            layoutExpanded?.visibility = View.VISIBLE
+            layoutCollapsed?.visibility = View.GONE
+        }
+        // 更新窗口大小
+        floatingView?.post {
+            try {
+                val params = floatingView?.layoutParams as? WindowManager.LayoutParams
+                if (params != null) {
+                    params.width = WindowManager.LayoutParams.WRAP_CONTENT
+                    params.height = WindowManager.LayoutParams.WRAP_CONTENT
+                    windowManager?.updateViewLayout(floatingView, params)
+                }
+            } catch (_: Exception) {}
+        }
+    }
+
+    private fun updateCollapsedInfo() {
+        val count = ttsManager?.danmuCount ?: 0
+        val paused = ttsManager?.isPaused() ?: false
+        val status = if (paused) "暂停" else "朗读中"
+        tvCollapsedInfo?.post {
+            tvCollapsedInfo?.text = "弹幕 $status | $count"
+        }
+    }
+
+    private fun updatePlayPauseIcon() {
+        val isPaused = ttsManager?.isPaused() ?: false
+        val icon = if (isPaused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause
+        btnPlayPause?.setImageResource(icon)
     }
 
     private fun setupDragListener(params: WindowManager.LayoutParams) {
@@ -113,19 +178,15 @@ class FloatingWindowManager(private val context: Context) {
             override fun onTouch(v: View, event: MotionEvent): Boolean {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        initialX = params.x
-                        initialY = params.y
-                        initialTouchX = event.rawX
-                        initialTouchY = event.rawY
+                        initialX = params.x; initialY = params.y
+                        initialTouchX = event.rawX; initialTouchY = event.rawY
                         isDragging = false
                         return true
                     }
                     MotionEvent.ACTION_MOVE -> {
                         val dx = event.rawX - initialTouchX
                         val dy = event.rawY - initialTouchY
-                        if (dx * dx + dy * dy > 25) {
-                            isDragging = true
-                        }
+                        if (dx * dx + dy * dy > 25) isDragging = true
                         if (isDragging) {
                             params.x = initialX + dx.toInt()
                             params.y = initialY + dy.toInt()
@@ -134,9 +195,7 @@ class FloatingWindowManager(private val context: Context) {
                         return true
                     }
                     MotionEvent.ACTION_UP -> {
-                        if (!isDragging) {
-                            v.performClick()
-                        }
+                        if (!isDragging) v.performClick()
                         return true
                     }
                 }
@@ -146,18 +205,17 @@ class FloatingWindowManager(private val context: Context) {
     }
 
     fun updateDanmuCount(count: Long) {
-        tvDanmuCount?.let { tv ->
-            tv.post { tv.text = "已读: ${count}条" }
-        }
+        tvDanmuCount?.let { tv -> tv.post { tv.text = "已读:$count" } }
+        if (isCollapsed) updateCollapsedInfo()
+    }
+
+    fun updateSkippedCount(count: Long) {
+        tvSkippedCount?.let { tv -> tv.post { tv.text = "跳过:$count" } }
     }
 
     fun hide() {
         if (!isShowing) return
-        try {
-            windowManager?.removeView(floatingView)
-        } catch (e: Exception) {
-            // ignore
-        }
+        try { windowManager?.removeView(floatingView) } catch (_: Exception) {}
         floatingView = null
         isShowing = false
     }

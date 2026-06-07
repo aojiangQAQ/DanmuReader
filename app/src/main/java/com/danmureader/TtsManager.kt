@@ -250,6 +250,74 @@ class TtsManager(private val context: Context) {
 
     fun getCurrentSpeed(): Float = currentSpeed
     fun clearQueue() { pendingQueue.clear(); tts?.stop(); isSpeaking = false }
+    /**
+     * 获取待朗读队列长度
+     */
+    fun getPendingCount(): Int {
+        return pendingQueue.size
+    }
+
+    /**
+     * 裁剪队列，只保留最后 keepCount 条
+     * 返回被跳过的条数
+     */
+    fun trimQueue(keepCount: Int): Int {
+        val total = pendingQueue.size
+        if (total <= keepCount) return 0
+
+        val toRemove = total - keepCount
+        // 保留最后 keepCount 条
+        val keep = mutableListOf<String>()
+        for (i in 0 until total) {
+            val item = pendingQueue.poll() ?: break
+            if (i >= toRemove) {
+                keep.add(item)
+            }
+        }
+        // 放回去
+        for (item in keep) {
+            pendingQueue.offer(item)
+        }
+        // 停止当前朗读，立即开始队列中的
+        tts?.stop()
+        isSpeaking = false
+        speakNext()
+        return toRemove
+    }
+
+    /**
+     * 清空队列并停止当前朗读
+     * 返回被跳过的条数
+     */
+    fun clearAndStop(): Int {
+        val skipped = pendingQueue.size
+        pendingQueue.clear()
+        tts?.stop()
+        isSpeaking = false
+        return skipped
+    }
+
+    private var baseSpeed = currentSpeed
+
+    /**
+     * 积压时自动加速（临时加速，不改变用户设置的速度）
+     */
+    fun autoSpeedUp() {
+        val targetSpeed = (currentSpeed * 1.3f).coerceAtMost(MAX_SPEED)
+        if (tts != null && isInitialized) {
+            tts?.setSpeechRate(targetSpeed)
+        }
+    }
+
+    /**
+     * 积压缓解后恢复正常语速
+     */
+    fun autoSpeedRestore() {
+        if (tts != null && isInitialized) {
+            tts?.setSpeechRate(currentSpeed)
+        }
+    }
+
     fun destroy() { tts?.stop(); tts?.shutdown(); tts = null; isInitialized = false }
 
     fun openTtsSettings() {
