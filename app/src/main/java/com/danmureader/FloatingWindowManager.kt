@@ -8,126 +8,125 @@ import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 
 class FloatingWindowManager(private val context: Context) {
 
-    private var windowManager: WindowManager? = null
-    private var floatingView: View? = null
-    private var isShowing = false
-    private var isCollapsed = false
+    private var wm: WindowManager? = null
+    private var root: View? = null
+    private var showing = false
+    private var collapsed = false
     private var ttsManager: TtsManager? = null
     private var service: DanmuAccessibilityService? = null
 
-    private var tvDanmuCount: TextView? = null
-    private var tvSkippedCount: TextView? = null
+    private var tvCount: TextView? = null
+    private var tvSkipped: TextView? = null
     private var tvSpeed: TextView? = null
-    private var btnPlayPause: ImageButton? = null
-    private var layoutExpanded: View? = null
-    private var layoutCollapsed: View? = null
-    private var tvCollapsedInfo: TextView? = null
+    private var btnPlay: TextView? = null
+    private var layoutControls: LinearLayout? = null
+    private var layoutCollapsedInfo: LinearLayout? = null
+    private var tvCollapsedCount: TextView? = null
 
-    fun setTtsManager(manager: TtsManager) { ttsManager = manager }
-    fun setService(svc: DanmuAccessibilityService) { service = svc }
+    fun setTtsManager(m: TtsManager) { ttsManager = m }
+    fun setService(s: DanmuAccessibilityService) { service = s }
 
     fun show() {
-        if (isShowing) return
-        windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        floatingView = LayoutInflater.from(context).inflate(R.layout.layout_floating_control, null)
+        if (showing) return
+        wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        root = LayoutInflater.from(context).inflate(R.layout.layout_floating_control, null)
 
-        val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        } else {
-            @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
-        }
+        else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
-        val params = WindowManager.LayoutParams(
+        val p = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-            layoutType,
+            type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 50
-            y = 300
+            x = 50; y = 300
         }
 
-        initViews()
-        setupDrag(params)
-        windowManager?.addView(floatingView, params)
-        isShowing = true
+        bindViews()
+        bindClicks()
+        setupDrag(p)
+        wm?.addView(root, p)
+        showing = true
     }
 
-    private fun initViews() {
-        floatingView?.let { view ->
-            tvDanmuCount = view.findViewById(R.id.tvDanmuCount)
-            tvSkippedCount = view.findViewById(R.id.tvSkippedCount)
-            tvSpeed = view.findViewById(R.id.tvSpeed)
-            btnPlayPause = view.findViewById(R.id.btnPlayPause)
-            layoutExpanded = view.findViewById(R.id.layoutExpanded)
-            layoutCollapsed = view.findViewById(R.id.layoutCollapsed)
-            tvCollapsedInfo = view.findViewById(R.id.tvCollapsedInfo)
-
-            view.findViewById<View>(R.id.btnToggle)?.setOnClickListener { toggleCollapse() }
-            view.findViewById<View>(R.id.btnToggleCollapsed)?.setOnClickListener { toggleCollapse() }
-
-            view.findViewById<View>(R.id.btnCollapsedPlayPause)?.setOnClickListener {
-                ttsManager?.let { tts -> if (tts.isPaused()) tts.resume() else tts.pause() }
-                updatePlayPauseIcon()
-            }
-
-            btnPlayPause?.setOnClickListener {
-                ttsManager?.let { tts -> if (tts.isPaused()) tts.resume() else tts.pause() }
-                updatePlayPauseIcon()
-            }
-
-            view.findViewById<View>(R.id.btnSpeedUp)?.setOnClickListener {
-                ttsManager?.let { tts -> tvSpeed?.text = "%.1fx".format(tts.speedUp()) }
-            }
-
-            view.findViewById<View>(R.id.btnSpeedDown)?.setOnClickListener {
-                ttsManager?.let { tts -> tvSpeed?.text = "%.1fx".format(tts.speedDown()) }
-            }
-
-            view.findViewById<View>(R.id.btnSkipLatest)?.setOnClickListener { service?.skipToLatest() }
-
+    private fun bindViews() {
+        root?.let { v ->
+            tvCount = v.findViewById(R.id.tvDanmuCount)
+            tvSkipped = v.findViewById(R.id.tvSkippedCount)
+            tvSpeed = v.findViewById(R.id.tvSpeed)
+            btnPlay = v.findViewById(R.id.btnPlayPause)
+            layoutControls = v.findViewById(R.id.layoutControls)
+            layoutCollapsedInfo = v.findViewById(R.id.layoutCollapsedInfo)
+            tvCollapsedCount = v.findViewById(R.id.tvCollapsedCount)
             tvSpeed?.text = "%.1fx".format(ttsManager?.getCurrentSpeed() ?: 1.5f)
-
-            isCollapsed = false
-            layoutExpanded?.visibility = View.VISIBLE
-            layoutCollapsed?.visibility = View.GONE
         }
     }
 
-    private fun toggleCollapse() {
-        isCollapsed = !isCollapsed
-        layoutExpanded?.visibility = if (isCollapsed) View.GONE else View.VISIBLE
-        layoutCollapsed?.visibility = if (isCollapsed) View.VISIBLE else View.GONE
-        if (isCollapsed) updateCollapsedInfo()
+    private fun bindClicks() {
+        root?.let { v ->
+            v.findViewById<View>(R.id.btnToggle)?.setOnClickListener { toggle() }
+            v.findViewById<View>(R.id.btnPlayPause)?.setOnClickListener {
+                ttsManager?.let { t -> if (t.isPaused()) t.resume() else t.pause(); updateIcon() }
+            }
+            v.findViewById<View>(R.id.btnSpeedUp)?.setOnClickListener {
+                ttsManager?.let { t -> tvSpeed?.text = "%.1fx".format(t.speedUp()) }
+            }
+            v.findViewById<View>(R.id.btnSpeedDown)?.setOnClickListener {
+                ttsManager?.let { t -> tvSpeed?.text = "%.1fx".format(t.speedDown()) }
+            }
+            v.findViewById<View>(R.id.btnSkipLatest)?.setOnClickListener { service?.skipToLatest() }
+        }
     }
 
-    private fun updateCollapsedInfo() {
-        val count = ttsManager?.danmuCount ?: 0
-        tvCollapsedInfo?.post { tvCollapsedInfo?.text = count.toString() }
+    private fun toggle() {
+        collapsed = !collapsed
+        if (collapsed) {
+            layoutControls?.visibility = View.GONE
+            layoutCollapsedInfo?.visibility = View.VISIBLE
+            tvCollapsedCount?.text = (ttsManager?.danmuCount ?: 0).toString()
+        } else {
+            layoutControls?.visibility = View.VISIBLE
+            layoutCollapsedInfo?.visibility = View.GONE
+        }
     }
 
-    private fun updatePlayPauseIcon() {
-        val isPaused = ttsManager?.isPaused() ?: false
-        btnPlayPause?.setImageResource(if (isPaused) android.R.drawable.ic_media_play else android.R.drawable.ic_media_pause)
+    private fun updateIcon() {
+        val paused = ttsManager?.isPaused() ?: false
+        btnPlay?.text = if (paused) "▶" else "⏸"
     }
 
-    private fun setupDrag(params: WindowManager.LayoutParams) {
-        val dragHandle = floatingView?.findViewById<View>(R.id.dragHandle) ?: return
-        dragHandle.setOnTouchListener(object : View.OnTouchListener {
+    private fun setupDrag(p: WindowManager.LayoutParams) {
+        root?.setOnTouchListener(object : View.OnTouchListener {
             private var ix = 0; private var iy = 0
             private var tx = 0f; private var ty = 0f
+            private var moved = false
+
             override fun onTouch(v: View, e: MotionEvent): Boolean {
                 when (e.action) {
-                    MotionEvent.ACTION_DOWN -> { ix = params.x; iy = params.y; tx = e.rawX; ty = e.rawY; return true }
-                    MotionEvent.ACTION_MOVE -> { params.x = ix + (e.rawX - tx).toInt(); params.y = iy + (e.rawY - ty).toInt(); windowManager?.updateViewLayout(floatingView, params); return true }
+                    MotionEvent.ACTION_DOWN -> {
+                        ix = p.x; iy = p.y; tx = e.rawX; ty = e.rawY; moved = false
+                        return false
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        val dx = e.rawX - tx; val dy = e.rawY - ty
+                        if (!moved && dx * dx + dy * dy < 400) return false
+                        moved = true
+                        p.x = ix + dx.toInt(); p.y = iy + dy.toInt()
+                        wm?.updateViewLayout(root, p)
+                        return true
+                    }
+                    MotionEvent.ACTION_UP -> {
+                        return moved
+                    }
                 }
                 return false
             }
@@ -135,19 +134,19 @@ class FloatingWindowManager(private val context: Context) {
     }
 
     fun updateDanmuCount(count: Long) {
-        tvDanmuCount?.post { tvDanmuCount?.text = "已读 $count" }
-        if (isCollapsed) tvCollapsedInfo?.post { tvCollapsedInfo?.text = count.toString() }
+        tvCount?.post { tvCount?.text = "已读$count" }
+        if (collapsed) tvCollapsedCount?.post { tvCollapsedCount?.text = count.toString() }
     }
 
     fun updateSkippedCount(count: Long) {
-        tvSkippedCount?.post { tvSkippedCount?.text = "跳过 $count" }
+        tvSkipped?.post { tvSkipped?.text = "跳过$count" }
     }
 
     fun hide() {
-        if (!isShowing) return
-        try { windowManager?.removeView(floatingView) } catch (_: Exception) {}
-        floatingView = null; isShowing = false
+        if (!showing) return
+        try { wm?.removeView(root) } catch (_: Exception) {}
+        root = null; showing = false
     }
 
-    fun isShowing(): Boolean = isShowing
+    fun isShowing(): Boolean = showing
 }

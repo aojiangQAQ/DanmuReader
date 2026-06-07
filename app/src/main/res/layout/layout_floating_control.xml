@@ -1,188 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bg_floating"
+    android:paddingHorizontal="14dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="8dp"
+    android:gravity="center_horizontal">
 
-    <!-- 折叠态：一个小胶囊 -->
+    <!-- 统计行 -->
     <LinearLayout
-        android:id="@+id/layoutCollapsed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="@drawable/bg_floating"
-        android:paddingHorizontal="14dp"
-        android:paddingVertical="8dp"
-        android:visibility="gone">
+        android:layout_marginBottom="6dp">
 
-        <View
-            android:id="@+id/btnCollapsedPlayPause"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+        <TextView
+            android:id="@+id/tvDanmuCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="已读0"
+            android:textSize="12sp"
+            android:textColor="@color/accent_green" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" | "
+            android:textSize="12sp"
+            android:textColor="@color/text_dim" />
+
+        <TextView
+            android:id="@+id/tvSkippedCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="跳过0"
+            android:textSize="12sp"
+            android:textColor="@color/accent_red" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" | "
+            android:textSize="12sp"
+            android:textColor="@color/text_dim" />
+
+        <TextView
+            android:id="@+id/btnToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="折叠"
+            android:textSize="12sp"
+            android:textColor="@color/accent_blue" />
+    </LinearLayout>
+
+    <!-- 按钮行 -->
+    <LinearLayout
+        android:id="@+id/layoutControls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/btnPlayPause"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:text="⏸"
+            android:textSize="16sp"
+            android:textColor="@color/text_primary"
+            android:gravity="center"
             android:background="?android:attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
 
         <TextView
-            android:id="@+id/tvCollapsedInfo"
+            android:id="@+id/btnSpeedDown"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:text="−"
+            android:textSize="18sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:id="@+id/tvSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="1.5x"
+            android:textSize="13sp"
+            android:textColor="@color/accent_yellow"
+            android:textStyle="bold"
+            android:layout_marginHorizontal="2dp" />
+
+        <TextView
+            android:id="@+id/btnSpeedUp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:text="+"
+            android:textSize="18sp"
+            android:textColor="@color/text_secondary"
+            android:gravity="center"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" | "
+            android:textSize="12sp"
+            android:textColor="@color/text_dim"
+            android:layout_marginHorizontal="2dp" />
+
+        <TextView
+            android:id="@+id/btnSkipLatest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="跳最新"
+            android:textSize="12sp"
+            android:textColor="@color/accent_blue"
+            android:paddingHorizontal="4dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- 折叠态（隐藏控制按钮） -->
+    <LinearLayout
+        android:id="@+id/layoutCollapsedInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:layout_marginTop="2dp">
+
+        <TextView
+            android:id="@+id/tvCollapsedCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0"
-            android:textSize="13sp"
+            android:textSize="14sp"
             android:textColor="@color/accent_green"
-            android:textStyle="bold"
-            android:layout_marginStart="6dp"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:id="@+id/btnToggleCollapsed"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="展开"
-            android:textSize="10sp"
-            android:textColor="@color/accent_blue"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="2dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true" />
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- 展开态：控制面板 -->
-    <LinearLayout
-        android:id="@+id/layoutExpanded"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/bg_floating"
-        android:gravity="center_horizontal">
-
-        <!-- 拖拽条 -->
-        <View
-            android:id="@+id/dragHandle"
-            android:layout_width="40dp"
-            android:layout_height="4dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="4dp"
-            android:background="@drawable/bg_drag_handle" />
-
-        <!-- 统计 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingHorizontal="14dp"
-            android:layout_marginBottom="6dp">
-
-            <TextView
-                android:id="@+id/tvDanmuCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="已读 0"
-                android:textSize="12sp"
-                android:textColor="@color/accent_green" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="12dp"
-                android:layout_marginHorizontal="10dp"
-                android:background="@color/divider" />
-
-            <TextView
-                android:id="@+id/tvSkippedCount"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="跳过 0"
-                android:textSize="12sp"
-                android:textColor="@color/accent_red" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="12dp"
-                android:layout_marginHorizontal="10dp"
-                android:background="@color/divider" />
-
-            <TextView
-                android:id="@+id/btnToggle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="折叠"
-                android:textSize="12sp"
-                android:textColor="@color/accent_blue"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
-
-        <!-- 控制按钮 -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingHorizontal="10dp"
-            android:paddingBottom="4dp">
-
-            <ImageButton
-                android:id="@+id/btnPlayPause"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_media_pause"
-                android:scaleType="centerInside"
-                android:contentDescription="暂停" />
-
-            <TextView
-                android:id="@+id/btnSpeedDown"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:text="-"
-                android:textSize="18sp"
-                android:textColor="@color/text_secondary"
-                android:gravity="center"
-                android:layout_marginStart="6dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true" />
-
-            <TextView
-                android:id="@+id/tvSpeed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="1.5x"
-                android:textSize="13sp"
-                android:textColor="@color/accent_yellow"
-                android:textStyle="bold"
-                android:layout_marginHorizontal="4dp" />
-
-            <TextView
-                android:id="@+id/btnSpeedUp"
-                android:layout_width="30dp"
-                android:layout_height="30dp"
-                android:text="+"
-                android:textSize="18sp"
-                android:textColor="@color/text_secondary"
-                android:gravity="center"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
-
-        <!-- 跳到最新 -->
-        <TextView
-            android:id="@+id/btnSkipLatest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="⏭ 跳到最新"
-            android:textSize="12sp"
-            android:textColor="@color/accent_blue"
-            android:gravity="center"
-            android:paddingVertical="8dp"
-            android:layout_marginHorizontal="10dp"
-            android:layout_marginBottom="8dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:clickable="true"
-            android:focusable="true" />
-    </LinearLayout>
-</FrameLayout>
+</LinearLayout>
