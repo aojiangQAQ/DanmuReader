@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">弹幕朗读助手</string>
+    <string name="accessibility_service_description">此服务用于监听抖音直播弹幕并朗读，帮助视障用户在直播时获取弹幕信息。</string>
+</resources>
