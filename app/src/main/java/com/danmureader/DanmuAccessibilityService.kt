@@ -12,7 +12,8 @@ class DanmuAccessibilityService : AccessibilityService() {
         private const val TAG = "DanmuService"
         private const val DOUYIN_RECYCLERVIEW_ID = "com.ss.android.ugc.aweme:id/ru7"
         private const val RECYCLERVIEW_CLASS = "androidx.recyclerview.widget.RecyclerView"
-        private const val DOUYIN_LIVE_ACTIVITY = "LiveBroadcastActivity"
+        private const val DOUYIN_LIVE_ACTIVITY_OLD = "LiveBroadcastActivity"
+        private const val DOUYIN_LIVE_ACTIVITY_NEW = "LivePlayActivity"
 
         // 积压阈值：待朗读条数超过此值时开始跳过
         private const val BACKLOG_SKIP_THRESHOLD = 5
@@ -122,7 +123,7 @@ class DanmuAccessibilityService : AccessibilityService() {
 
             // 检查是否在直播页面
             val currentActivity = event.className?.toString() ?: ""
-            isOnLivePage = currentActivity.contains(DOUYIN_LIVE_ACTIVITY)
+            isOnLivePage = currentActivity.contains(DOUYIN_LIVE_ACTIVITY_OLD) || currentActivity.contains(DOUYIN_LIVE_ACTIVITY_NEW)
 
             if (now - lastLogTime > 10000) {
                 lastLogTime = now
