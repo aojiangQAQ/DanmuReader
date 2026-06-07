@@ -7,6 +7,7 @@ import android.content.IntentFilter
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
@@ -15,7 +16,11 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import com.google.android.material.button.MaterialButton
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -31,10 +36,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnInstallXunfei: MaterialButton
     private lateinit var btnTtsSettings: MaterialButton
     private lateinit var btnClearLog: MaterialButton
+    private lateinit var btnExportLog: MaterialButton
     private lateinit var tvLogs: TextView
     private lateinit var scrollLogs: ScrollView
 
-    // 引擎安装区域
     private lateinit var layoutInstallEngines: View
 
     private var statusReceiver: BroadcastReceiver? = null
@@ -59,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         btnInstallXunfei = findViewById(R.id.btnInstallXunfei)
         btnTtsSettings = findViewById(R.id.btnTtsSettings)
         btnClearLog = findViewById(R.id.btnClearLog)
+        btnExportLog = findViewById(R.id.btnExportLog)
         tvLogs = findViewById(R.id.tvLogs)
         scrollLogs = findViewById(R.id.scrollLogs)
         layoutInstallEngines = findViewById(R.id.layoutInstallEngines)
@@ -67,33 +73,27 @@ class MainActivity : AppCompatActivity() {
         btnAccessibility.setOnClickListener { openAccessibilitySettings() }
         btnTestTts.setOnClickListener { testTts() }
         btnClearLog.setOnClickListener { tvLogs.text = ""; AppLogger.i("MainActivity", "日志已清除") }
+        btnExportLog.setOnClickListener { exportLog() }
 
         btnInstallRhVoice.setOnClickListener {
             AppLogger.i("MainActivity", "正在跳转安装 RHVoice...")
-            val ttsManager = TtsManager(this)
-            ttsManager.installRhVoice()
+            TtsManager(this).installRhVoice()
         }
         btnInstallGoogleTts.setOnClickListener {
             AppLogger.i("MainActivity", "正在跳转安装 Google TTS...")
-            val ttsManager = TtsManager(this)
-            ttsManager.installGoogleTts()
+            TtsManager(this).installGoogleTts()
         }
         btnInstallXunfei.setOnClickListener {
             AppLogger.i("MainActivity", "正在跳转安装讯飞语记...")
-            val ttsManager = TtsManager(this)
-            ttsManager.installXunfei()
+            TtsManager(this).installXunfei()
         }
         btnTtsSettings.setOnClickListener {
             AppLogger.i("MainActivity", "正在打开 TTS 设置页面...")
-            val ttsManager = TtsManager(this)
-            ttsManager.openTtsSettings()
+            TtsManager(this).openTtsSettings()
         }
 
-        // 注册服务状态广播
         statusReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                updateUI()
-            }
+            override fun onReceive(context: Context?, intent: Intent?) { updateUI() }
         }
         val statusFilter = IntentFilter("com.danmureader.SERVICE_STATUS_CHANGED")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -102,7 +102,6 @@ class MainActivity : AppCompatActivity() {
             registerReceiver(statusReceiver, statusFilter)
         }
 
-        // 注册日志广播
         logReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val msg = intent?.getStringExtra(AppLogger.EXTRA_MESSAGE) ?: return
@@ -117,17 +116,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         AppLogger.i("MainActivity", "应用启动完成，正在检测环境...")
-
-        // 启动时自动检测 TTS 引擎
         checkTtsEngine()
     }
 
     override fun onResume() {
         super.onResume()
         updateUI()
-        // 从安装页面返回后重新检测
         checkTtsEngine()
-        // 加载历史日志
         val history = AppLogger.getHistory()
         if (history.isNotEmpty() && tvLogs.text.isEmpty()) {
             tvLogs.text = history.joinToString("\n")
@@ -141,11 +136,8 @@ class MainActivity : AppCompatActivity() {
         layoutInstallEngines.visibility = View.GONE
 
         val ttsManager = TtsManager(this)
-
-        // 先用 PackageManager 列出已安装的 TTS 引擎（仅作日志参考）
         val installed = ttsManager.listInstalledEngines()
         AppLogger.i("MainActivity", "PackageManager 扫描到 ${installed.size} 个TTS引擎")
-        // 无论是否查到，都继续尝试实际初始化 TTS
 
         ttsManager.checkEngineStatus { code, message ->
             handler.post {
@@ -185,50 +177,31 @@ class MainActivity : AppCompatActivity() {
         val accessibilityOk = DanmuAccessibilityService.isServiceRunning(this)
         val ttsOk = tvTtsStatus.text.startsWith("✓")
 
-        // 悬浮窗权限状态
         if (overlayOk) {
             tvOverlayStatus.text = "✓ 悬浮窗权限已授予"
             tvOverlayStatus.setTextColor(getColor(R.color.accent_green))
-            btnOverlay.text = "已授权"
-            btnOverlay.isEnabled = false
+            btnOverlay.text = "已授权"; btnOverlay.isEnabled = false
         } else {
             tvOverlayStatus.text = "✗ 悬浮窗权限未授予"
             tvOverlayStatus.setTextColor(getColor(R.color.accent_red))
-            btnOverlay.text = "去授权"
-            btnOverlay.isEnabled = true
+            btnOverlay.text = "去授权"; btnOverlay.isEnabled = true
         }
 
-        // 无障碍服务状态
         if (accessibilityOk) {
             tvAccessibilityStatus.text = "✓ 无障碍服务运行中"
             tvAccessibilityStatus.setTextColor(getColor(R.color.accent_green))
-            btnAccessibility.text = "已开启"
-            btnAccessibility.isEnabled = false
+            btnAccessibility.text = "已开启"; btnAccessibility.isEnabled = false
         } else {
             tvAccessibilityStatus.text = "✗ 无障碍服务未开启"
             tvAccessibilityStatus.setTextColor(getColor(R.color.accent_red))
-            btnAccessibility.text = "去开启"
-            btnAccessibility.isEnabled = true
+            btnAccessibility.text = "去开启"; btnAccessibility.isEnabled = true
         }
 
-        // 总状态
         when {
-            !ttsOk -> {
-                tvStatus.text = "请先安装语音引擎（第一步最重要）"
-                tvStatus.setTextColor(getColor(R.color.accent_red))
-            }
-            !overlayOk -> {
-                tvStatus.text = "请授予悬浮窗权限"
-                tvStatus.setTextColor(getColor(R.color.accent_blue))
-            }
-            !accessibilityOk -> {
-                tvStatus.text = "请开启无障碍服务"
-                tvStatus.setTextColor(getColor(R.color.accent_blue))
-            }
-            else -> {
-                tvStatus.text = "✓ 一切就绪！打开抖音直播间即可自动朗读弹幕"
-                tvStatus.setTextColor(getColor(R.color.accent_green))
-            }
+            !ttsOk -> { tvStatus.text = "请先安装语音引擎（第一步最重要）"; tvStatus.setTextColor(getColor(R.color.accent_red)) }
+            !overlayOk -> { tvStatus.text = "请授予悬浮窗权限"; tvStatus.setTextColor(getColor(R.color.accent_blue)) }
+            !accessibilityOk -> { tvStatus.text = "请开启无障碍服务"; tvStatus.setTextColor(getColor(R.color.accent_blue)) }
+            else -> { tvStatus.text = "✓ 一切就绪！打开抖音直播间即可自动朗读弹幕"; tvStatus.setTextColor(getColor(R.color.accent_green)) }
         }
     }
 
@@ -239,15 +212,11 @@ class MainActivity : AppCompatActivity() {
 
         val ttsManager = TtsManager(this)
         ttsManager.onInitSuccess = {
-            handler.post {
-                btnTestTts.text = "✓ 朗读正常"
-                btnTestTts.isEnabled = true
-            }
+            handler.post { btnTestTts.text = "✓ 朗读正常"; btnTestTts.isEnabled = true }
         }
         ttsManager.onInitFailed = { reason ->
             handler.post {
-                btnTestTts.text = "✗ 测试失败"
-                btnTestTts.isEnabled = true
+                btnTestTts.text = "✗ 测试失败"; btnTestTts.isEnabled = true
                 AppLogger.e("MainActivity", "朗读测试失败: $reason")
             }
         }
@@ -255,19 +224,61 @@ class MainActivity : AppCompatActivity() {
             AppLogger.i("MainActivity", "TTS 初始化成功，播放测试语音...")
             ttsManager.speak("你好，这是弹幕朗读助手的测试语音。如果你能听到这段话，说明朗读功能正常。")
         }
-        handler.postDelayed({
-            ttsManager.destroy()
-            AppLogger.i("MainActivity", "=== 朗读测试结束 ===")
-        }, 10000)
+        handler.postDelayed({ ttsManager.destroy(); AppLogger.i("MainActivity", "=== 朗读测试结束 ===") }, 10000)
+    }
+
+    /**
+     * 导出日志到文件并通过分享发送
+     */
+    private fun exportLog() {
+        val history = AppLogger.getHistory()
+        if (history.isEmpty()) {
+            Toast.makeText(this, "暂无日志可导出", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
+            val fileName = "danmu_log_${dateFormat.format(Date())}.txt"
+
+            // 写入到应用缓存目录（不需要存储权限）
+            val logDir = File(cacheDir, "logs")
+            logDir.mkdirs()
+            val logFile = File(logDir, fileName)
+
+            val header = buildString {
+                appendLine("=== 弹幕朗读助手 日志 ===")
+                appendLine("导出时间: ${SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())}")
+                appendLine("设备型号: ${Build.MANUFACTURER} ${Build.MODEL}")
+                appendLine("系统版本: Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+                appendLine("App版本: 1.0")
+                appendLine("========================")
+                appendLine()
+            }
+
+            logFile.writeText(header + history.joinToString("\n"))
+
+            AppLogger.i("MainActivity", "日志已导出: $fileName")
+
+            // 通过系统分享发送
+            val uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", logFile)
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                putExtra(Intent.EXTRA_SUBJECT, "弹幕朗读助手日志")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(shareIntent, "分享日志"))
+
+        } catch (e: Exception) {
+            AppLogger.e("MainActivity", "导出日志失败: ${e.message}")
+            Toast.makeText(this, "导出失败: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun openOverlaySettings() {
         try {
-            val intent = Intent(
-                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                Uri.parse("package:$packageName")
-            )
-            startActivity(intent)
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
             AppLogger.i("MainActivity", "已跳转到悬浮窗权限设置")
         } catch (e: Exception) {
             AppLogger.e("MainActivity", "无法打开悬浮窗设置: ${e.message}")
@@ -277,8 +288,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openAccessibilitySettings() {
         try {
-            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-            startActivity(intent)
+            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             AppLogger.i("MainActivity", "已跳转到无障碍设置")
             Toast.makeText(this, "请找到「弹幕朗读助手」并开启", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
