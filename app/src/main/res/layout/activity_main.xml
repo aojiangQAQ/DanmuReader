@@ -345,6 +345,16 @@
                         android:textStyle="bold" />
 
                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSettings"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="设置"
+                        android:textSize="12sp"
+                        app:cornerRadius="6dp"
+                        android:textColor="@color/accent_green"
+                        style="@style/Widget.MaterialComponents.Button.TextButton" />
+
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnExportLog"
                         android:layout_width="wrap_content"
                         android:layout_height="32dp"

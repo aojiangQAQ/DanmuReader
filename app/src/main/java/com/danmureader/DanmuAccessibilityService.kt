@@ -19,9 +19,7 @@ class DanmuAccessibilityService : AccessibilityService() {
             val am = context.getSystemService(android.content.Context.ACCESSIBILITY_SERVICE) as android.view.accessibility.AccessibilityManager
             val enabledServices = am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC)
             for (service in enabledServices) {
-                if (service.resolveInfo.serviceInfo.packageName == context.packageName) {
-                    return true
-                }
+                if (service.resolveInfo.serviceInfo.packageName == context.packageName) return true
             }
             return false
         }
@@ -36,13 +34,11 @@ class DanmuAccessibilityService : AccessibilityService() {
     private var danmuReadTotal = 0L
     private var danmuSkipped = 0L
 
-    // 福袋/刷屏去重: 记录最近 N 秒内的弹幕内容，用于检测刷屏
+    // 福袋刷屏去重
     private val recentContentMap = LinkedHashMap<String, Long>(64, 0.75f, true)
-    private val spamTimeWindow = 10000L  // 10秒窗口
-    private val spamMinCount = 3  // 同一内容出现3次以上视为刷屏
-    private var spamSkippedCount = 0L
+    private val spamTimeWindow = 10000L
+    private val spamMinCount = 3
 
-    // 系统消息关键词
     private val systemKeywords = listOf(
         "进入直播间", "关注了主播", "关注了", "点赞了", "送出", "送出了",
         "欢迎来到", "直播开始", "直播结束", "刚刚看过", "来了",
@@ -51,25 +47,22 @@ class DanmuAccessibilityService : AccessibilityService() {
         "主播", "开播", "下播", "直播回放", "直播中",
         "小时榜", "人气榜", "全国榜", "同城",
         "暂无更多", "加载中", "点击进入", "限时日常",
-        "福袋", "领取", "参与"
+        "福袋", "领取", "参与", "送给", "人气票", "为你闪耀"
     )
 
-    // 礼物关键词
     private val giftKeywords = listOf(
         "送出", "礼物", "嘉年华", "火箭", "飞机", "跑车",
         "小心心", "棒棒糖", "奶茶", "啤酒", "玫瑰",
         "气球", "保时捷", "游轮", "城堡", "花海",
-        "金币", "钻石", "抖币"
+        "金币", "钻石", "抖币", "小恶魔", "青绿画卷"
     )
 
-    // 主播/个人信息关键词
     private val profileKeywords = listOf(
         "的主页", "个人主页", "关注数", "粉丝数",
         "作品", "获赞", "抖音号", "举报", "拉黑",
         "设置备注", "私信", "发消息"
     )
 
-    // 弹出面板关键词
     private val popupPanelKeywords = listOf(
         "热门", "精选", "送礼", "背包", "特效",
         "发送", "评论", "输入", "说点什么",
@@ -87,13 +80,8 @@ class DanmuAccessibilityService : AccessibilityService() {
         ttsManager = TtsManager(this)
         floatingWindow = FloatingWindowManager(this)
 
-        ttsManager.init {
-            AppLogger.i(TAG, "TTS 引擎初始化成功")
-        }
-
-        ttsManager.onSpeakStart = { text ->
-            AppLogger.i(TAG, "朗读: $text")
-        }
+        ttsManager.init { AppLogger.i(TAG, "TTS 引擎初始化成功") }
+        ttsManager.onSpeakStart = { text -> AppLogger.i(TAG, "朗读: $text") }
 
         floatingWindow.setTtsManager(ttsManager)
         floatingWindow.setService(this)
@@ -102,14 +90,11 @@ class DanmuAccessibilityService : AccessibilityService() {
         isRunning = true
         AppLogger.i(TAG, "服务就绪")
 
-        sendBroadcast(Intent("com.danmureader.SERVICE_STATUS_CHANGED").apply {
-            setPackage(packageName)
-        })
+        sendBroadcast(Intent("com.danmureader.SERVICE_STATUS_CHANGED").apply { setPackage(packageName) })
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (!isRunning || event == null) return
-
         val now = System.currentTimeMillis()
         if (now - lastProcessTime < processInterval) return
         lastProcessTime = now
@@ -117,11 +102,8 @@ class DanmuAccessibilityService : AccessibilityService() {
         try {
             val packageName = event.packageName?.toString() ?: return
             if (packageName != "com.ss.android.ugc.aweme") return
-
             val rootNode = rootInActiveWindow ?: return
-
             if (isPopupPanelOpen(rootNode)) return
-
             val recyclerView = findDanmuRecyclerView(rootNode) ?: return
             processDanmuRecyclerView(recyclerView, now)
             handleBacklog()
@@ -130,9 +112,7 @@ class DanmuAccessibilityService : AccessibilityService() {
         }
     }
 
-    private fun isPopupPanelOpen(root: AccessibilityNodeInfo): Boolean {
-        return checkForPopupElements(root, 0)
-    }
+    private fun isPopupPanelOpen(root: AccessibilityNodeInfo): Boolean = checkForPopupElements(root, 0)
 
     private fun checkForPopupElements(node: AccessibilityNodeInfo, depth: Int): Boolean {
         if (depth > 8) return false
@@ -142,17 +122,14 @@ class DanmuAccessibilityService : AccessibilityService() {
             val rect = android.graphics.Rect()
             node.getBoundsInScreen(rect)
             val screenHeight = resources.displayMetrics.heightPixels
-            if (rect.top > screenHeight * 0.3 && rect.height() > screenHeight * 0.2) {
-                return true
-            }
+            if (rect.top > screenHeight * 0.3 && rect.height() > screenHeight * 0.2) return true
         }
         for (i in 0 until node.childCount) {
             val child = node.getChild(i) ?: continue
             if (child.isEditable) {
                 val rect = android.graphics.Rect()
                 child.getBoundsInScreen(rect)
-                val screenHeight = resources.displayMetrics.heightPixels
-                if (rect.top > screenHeight * 0.3) return true
+                if (rect.top > resources.displayMetrics.heightPixels * 0.3) return true
             }
             if (checkForPopupElements(child, depth + 1)) return true
         }
@@ -177,22 +154,13 @@ class DanmuAccessibilityService : AccessibilityService() {
             val widthRatio = rect.width().toFloat() / screenWidth
             val topRatio = rect.top.toFloat() / screenHeight
             if (widthRatio < 0.25 || widthRatio > 0.98) continue
-            if (rect.height() > screenHeight * 0.85) continue
-            if (rect.height() < 50) continue
+            if (rect.height() > screenHeight * 0.85 || rect.height() < 50) continue
             if (topRatio > 0.9) continue
-            val childCount = rv.childCount
-            if (childCount < 1) continue
-
-            var score = 0f
-            val distanceFromTypical = Math.abs(topRatio - 0.50f)
-            score += (1f - distanceFromTypical) * 3f
+            if (rv.childCount < 1) continue
+            var score = (1f - Math.abs(topRatio - 0.50f)) * 3f
             if (widthRatio in 0.4f..0.85f) score += 2f
-            if (childCount in 2..20) score += 1f
-
-            if (score > bestScore) {
-                bestScore = score
-                bestMatch = rv
-            }
+            if (rv.childCount in 2..20) score += 1f
+            if (score > bestScore) { bestScore = score; bestMatch = rv }
         }
         return bestMatch
     }
@@ -206,29 +174,37 @@ class DanmuAccessibilityService : AccessibilityService() {
     }
 
     private fun processDanmuRecyclerView(recyclerView: AccessibilityNodeInfo, now: Long) {
-        val childCount = recyclerView.childCount
-        if (childCount <= 0) return
-
-        for (i in 0 until childCount) {
+        for (i in 0 until recyclerView.childCount) {
             val child = recyclerView.getChild(i) ?: continue
             val text = extractTextFromNode(child)
             if (text.isEmpty()) continue
 
-            // 解析用户名和内容
-            val parsed = parseDanmu(text)
-            if (parsed == null) continue
+            val parsed = parseDanmu(text) ?: continue
             val (user, content) = parsed
 
             // 过滤非弹幕
-            if (!isDanmuText(content)) continue
-
-            // 福袋刷屏检测
-            if (isSpamContent(content, now)) {
-                spamSkippedCount++
+            if (!isDanmuText(content)) {
+                AppLogger.d(TAG, "[过滤-非弹幕] " + user + ": " + content)
                 continue
             }
 
-            // 去重
+            // 自定义屏蔽词检测
+            val customWords = SettingsManager.getCustomBlockWords(this)
+            if (customWords.any { content.contains(it) }) {
+                AppLogger.d(TAG, "[跳过-屏蔽词] " + user + ": " + content)
+                danmuSkipped++
+                floatingWindow.updateSkippedCount(danmuSkipped)
+                continue
+            }
+
+            // 福袋刷屏检测（仅在开关开启时生效）
+            if (SettingsManager.isSpamFilterEnabled(this) && isSpamContent(content, now)) {
+                AppLogger.d(TAG, "[跳过-刷屏] " + user + ": " + content)
+                danmuSkipped++
+                floatingWindow.updateSkippedCount(danmuSkipped)
+                continue
+            }
+
             val fullText = user + " 说 " + content
             if (danmuQueue.offer(fullText)) {
                 AppLogger.d(TAG, "弹幕: " + fullText)
@@ -239,24 +215,14 @@ class DanmuAccessibilityService : AccessibilityService() {
         }
     }
 
-    /**
-     * 解析抖音弹幕格式: "‎* * 用户名：内容" 或 "‎* 用户名：内容" 或 "‎用户名：内容"
-     * 前面的 * 和空格是抖音的会员/粉丝团标识
-     */
     private fun parseDanmu(raw: String): Pair<String, String>? {
         var text = raw.trim()
-
-        // 去掉开头的隐藏字符（\u200E 等 LTR mark）
         text = text.replace("\u200E", "").replace("\u200F", "").replace("\u200B", "").trim()
-
-        // 去掉开头的 * 和空格（抖音会员/粉丝团标识）
         while (text.startsWith("*") || text.startsWith(" ")) {
             text = text.removePrefix("*").trim()
         }
 
-        // 查找用户名和内容的分隔符
-        // 抖音弹幕用全角冒号 "：" 分隔，也可能用 ": "
-        val separators = listOf("：", ": ", ":")
+        val separators = listOf("\uff1a", ": ", ":")
         for (sep in separators) {
             val idx = text.indexOf(sep)
             if (idx in 1..30) {
@@ -268,38 +234,24 @@ class DanmuAccessibilityService : AccessibilityService() {
             }
         }
 
-        // 找不到分隔符，整条作为内容（无用户名）
+        // 没有分隔符，检查是否是纯弹幕内容（无用户名）
         if (text.length >= 2) {
-            return Pair("观众", text)
+            // 不再默认为"观众"，直接返回null，因为没有用户名的大概率不是弹幕
+            return null
         }
-
         return null
     }
 
-    /**
-     * 福袋/刷屏检测
-     * 在短时间内相同内容出现多次则视为刷屏
-     */
     private fun isSpamContent(content: String, now: Long): Boolean {
-        // 清理过期记录
         val iterator = recentContentMap.iterator()
         while (iterator.hasNext()) {
-            if (now - iterator.next().value > spamTimeWindow) {
-                iterator.remove()
-            }
+            if (now - iterator.next().value > spamTimeWindow) iterator.remove()
         }
-
-        // 记录当前内容
         recentContentMap[content] = now
-
-        // 统计相同内容出现次数
         var count = 0
         for (entry in recentContentMap) {
-            if (entry.key == content && now - entry.value <= spamTimeWindow) {
-                count++
-            }
+            if (entry.key == content && now - entry.value <= spamTimeWindow) count++
         }
-
         return count >= spamMinCount
     }
 
@@ -326,7 +278,6 @@ class DanmuAccessibilityService : AccessibilityService() {
         for (kw in popupPanelKeywords) { if (text.contains(kw)) return false }
         if (text.matches(Regex("^[\\d,.]+$"))) return false
         if (text.matches(Regex("^[\\p{So}\\p{Cn}\\s]+$"))) return false
-        // 过滤纯表情符号文本如 [捂脸][捂脸]
         if (text.matches(Regex("^\\[.*\\]+$"))) return false
         return true
     }
@@ -350,9 +301,7 @@ class DanmuAccessibilityService : AccessibilityService() {
         floatingWindow.updateSkippedCount(danmuSkipped)
     }
 
-    override fun onInterrupt() {
-        AppLogger.w(TAG, "服务被中断")
-    }
+    override fun onInterrupt() { AppLogger.w(TAG, "服务被中断") }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -360,8 +309,6 @@ class DanmuAccessibilityService : AccessibilityService() {
         ttsManager.destroy()
         floatingWindow.hide()
         AppLogger.i(TAG, "服务已销毁")
-        sendBroadcast(Intent("com.danmureader.SERVICE_STATUS_CHANGED").apply {
-            setPackage(packageName)
-        })
+        sendBroadcast(Intent("com.danmureader.SERVICE_STATUS_CHANGED").apply { setPackage(packageName) })
     }
 }

@@ -37,6 +37,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnTtsSettings: MaterialButton
     private lateinit var btnClearLog: MaterialButton
     private lateinit var btnExportLog: MaterialButton
+    private lateinit var btnSettings: MaterialButton
     private lateinit var tvLogs: TextView
     private lateinit var scrollLogs: ScrollView
 
@@ -65,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         btnTtsSettings = findViewById(R.id.btnTtsSettings)
         btnClearLog = findViewById(R.id.btnClearLog)
         btnExportLog = findViewById(R.id.btnExportLog)
+        btnSettings = findViewById(R.id.btnSettings)
         tvLogs = findViewById(R.id.tvLogs)
         scrollLogs = findViewById(R.id.scrollLogs)
         layoutInstallEngines = findViewById(R.id.layoutInstallEngines)
@@ -74,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         btnTestTts.setOnClickListener { testTts() }
         btnClearLog.setOnClickListener { tvLogs.text = ""; AppLogger.i("MainActivity", "日志已清除") }
         btnExportLog.setOnClickListener { exportLog() }
+        btnSettings.setOnClickListener { startActivity(Intent(this, SettingsActivity::class.java)) }
 
         btnInstallRhVoice.setOnClickListener {
             AppLogger.i("MainActivity", "正在跳转安装 RHVoice...")
