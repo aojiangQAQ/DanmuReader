@@ -141,6 +141,15 @@ class MainActivity : AppCompatActivity() {
         layoutInstallEngines.visibility = View.GONE
 
         val ttsManager = TtsManager(this)
+
+        // 先用 PackageManager 列出已安装的 TTS 引擎
+        val installed = ttsManager.listInstalledEngines()
+        if (installed.isNotEmpty()) {
+            AppLogger.i("MainActivity", "系统发现 ${installed.size} 个TTS引擎: ${installed.joinToString { it.first }}")
+        } else {
+            AppLogger.w("MainActivity", "系统中未发现任何TTS引擎")
+        }
+
         ttsManager.checkEngineStatus { code, message ->
             handler.post {
                 when (code) {
