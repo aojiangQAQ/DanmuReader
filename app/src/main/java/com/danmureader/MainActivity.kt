@@ -145,25 +145,28 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 when (code) {
                     0 -> {
-                        // 引擎正常
                         tvTtsStatus.text = "✓ $message"
                         tvTtsStatus.setTextColor(getColor(R.color.accent_green))
                         layoutInstallEngines.visibility = View.GONE
                         AppLogger.i("MainActivity", "TTS 检测通过: $message")
                     }
                     1 -> {
-                        // 无引擎
-                        tvTtsStatus.text = "✗ 未检测到语音引擎，需要安装"
+                        tvTtsStatus.text = "✗ $message"
                         tvTtsStatus.setTextColor(getColor(R.color.accent_red))
                         layoutInstallEngines.visibility = View.VISIBLE
-                        AppLogger.w("MainActivity", "未检测到TTS引擎，请安装一个语音引擎")
+                        AppLogger.w("MainActivity", "TTS引擎问题: $message")
                     }
                     2 -> {
-                        // 引擎不支持中文
                         tvTtsStatus.text = "✗ $message"
                         tvTtsStatus.setTextColor(getColor(R.color.accent_red))
                         layoutInstallEngines.visibility = View.VISIBLE
                         AppLogger.w("MainActivity", "TTS引擎不支持中文: $message")
+                    }
+                    3 -> {
+                        tvTtsStatus.text = "✗ $message"
+                        tvTtsStatus.setTextColor(getColor(R.color.accent_red))
+                        layoutInstallEngines.visibility = View.VISIBLE
+                        AppLogger.e("MainActivity", "TTS检测异常: $message")
                     }
                 }
                 updateUI()
