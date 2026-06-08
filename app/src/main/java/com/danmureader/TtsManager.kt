@@ -31,7 +31,9 @@ class TtsManager(private val context: Context) {
     var onSpeakStart: ((String) -> Unit)? = null
     var onSpeakEnd: (() -> Unit)? = null
     var danmuCount = 0L
-    var lastSpokenText: String = ""
+    private val historyQueue = ArrayDeque<String>()
+    private val historyMaxSize = 5
+    private var historyIndex = -1  // -1 表示当前没有在翻历史
 
     var onInitSuccess: (() -> Unit)? = null
     var onInitFailed: ((reason: String) -> Unit)? = null
@@ -219,7 +221,10 @@ class TtsManager(private val context: Context) {
     private fun doSpeak(text: String) {
         if (!isInitialized) { AppLogger.w(TAG, "TTS未初始化，无法朗读"); return }
         danmuCount++
-        lastSpokenText = text
+        // 加入历史队列
+        historyQueue.addLast(text)
+        while (historyQueue.size > historyMaxSize) { historyQueue.removeFirst() }
+        historyIndex = -1  // 重置翻页位置
         onSpeakStart?.invoke(text)
         val params = android.os.Bundle()
         params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "danmu_$danmuCount")
@@ -321,16 +326,31 @@ class TtsManager(private val context: Context) {
     }
 
     fun replayLast() {
-        if (lastSpokenText.isNotEmpty()) {
-            // 停止当前朗读，立即重读上一条
-            tts?.stop()
-            isSpeaking = false
-            pendingQueue.clear()
-            doSpeak(lastSpokenText)
-            AppLogger.i(TAG, "重读上一条: " + lastSpokenText)
-        } else {
-            AppLogger.w(TAG, "没有可重读的内容")
+        if (historyQueue.isEmpty()) {
+            AppLogger.w(TAG, "没有朗读历史")
+            return
         }
+        // 如果还没开始翻页，从最后一条（最新）开始
+        if (historyIndex == -1) {
+            historyIndex = historyQueue.size - 1
+        } else {
+            // 往前翻一条
+            historyIndex--
+        }
+        // 边界检查：翻到头了就停在第一条
+        if (historyIndex < 0) {
+            historyIndex = 0
+            AppLogger.i(TAG, "已到最早一条")
+        }
+        val texts = historyQueue.toList()
+        val text = texts[historyIndex]
+        tts?.stop()
+        isSpeaking = false
+        pendingQueue.clear()
+        doSpeak(text)
+        val pos = historyIndex + 1
+        val total = texts.size
+        AppLogger.i(TAG, "上一条($pos/$total): " + text)
     }
 
     fun destroy() { tts?.stop(); tts?.shutdown(); tts = null; isInitialized = false }

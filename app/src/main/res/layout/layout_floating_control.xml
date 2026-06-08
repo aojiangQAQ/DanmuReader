@@ -134,7 +134,7 @@
                 android:id="@+id/btnReplay"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🔁 重读"
+                android:text="⏮ 上一条"
                 android:textSize="14sp"
                 android:textColor="@color/accent_blue"
                 android:paddingHorizontal="12dp"
