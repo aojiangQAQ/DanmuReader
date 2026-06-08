@@ -31,7 +31,6 @@ class DanmuAccessibilityService : AccessibilityService() {
     private var isRunning = false
     private var lastProcessTime = 0L
     private val processInterval = 200L
-    private var danmuReadTotal = 0L
     private var danmuSkipped = 0L
 
     // 福袋刷屏去重
@@ -209,8 +208,6 @@ class DanmuAccessibilityService : AccessibilityService() {
             if (danmuQueue.offer(fullText)) {
                 AppLogger.d(TAG, "弹幕: " + fullText)
                 ttsManager.speak(fullText)
-                danmuReadTotal++
-                floatingWindow.updateDanmuCount(danmuReadTotal)
             }
         }
     }
@@ -297,8 +294,11 @@ class DanmuAccessibilityService : AccessibilityService() {
 
     fun skipToLatest() {
         val skipped = ttsManager.clearAndStop()
-        danmuSkipped += skipped
-        floatingWindow.updateSkippedCount(danmuSkipped)
+        if (skipped > 0) {
+            danmuSkipped += skipped
+            floatingWindow.updateSkippedCount(danmuSkipped)
+            AppLogger.i(TAG, "\u8DF3\u8FC7 " + skipped + " \u6761")
+        }
     }
 
     override fun onInterrupt() { AppLogger.w(TAG, "服务被中断") }

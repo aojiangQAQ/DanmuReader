@@ -31,6 +31,7 @@ class TtsManager(private val context: Context) {
     var onSpeakStart: ((String) -> Unit)? = null
     var onSpeakEnd: (() -> Unit)? = null
     var danmuCount = 0L
+    var lastSpokenText: String = ""
 
     var onInitSuccess: (() -> Unit)? = null
     var onInitFailed: ((reason: String) -> Unit)? = null
@@ -218,6 +219,7 @@ class TtsManager(private val context: Context) {
     private fun doSpeak(text: String) {
         if (!isInitialized) { AppLogger.w(TAG, "TTS未初始化，无法朗读"); return }
         danmuCount++
+        lastSpokenText = text
         onSpeakStart?.invoke(text)
         val params = android.os.Bundle()
         params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "danmu_$danmuCount")
@@ -315,6 +317,19 @@ class TtsManager(private val context: Context) {
     fun autoSpeedRestore() {
         if (tts != null && isInitialized) {
             tts?.setSpeechRate(currentSpeed)
+        }
+    }
+
+    fun replayLast() {
+        if (lastSpokenText.isNotEmpty()) {
+            // 停止当前朗读，立即重读上一条
+            tts?.stop()
+            isSpeaking = false
+            pendingQueue.clear()
+            doSpeak(lastSpokenText)
+            AppLogger.i(TAG, "重读上一条: " + lastSpokenText)
+        } else {
+            AppLogger.w(TAG, "没有可重读的内容")
         }
     }
 

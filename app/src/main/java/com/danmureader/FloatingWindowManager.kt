@@ -84,6 +84,9 @@ class FloatingWindowManager(private val context: Context) {
                 ttsManager?.let { t -> tvSpeed?.text = "%.1fx".format(t.speedDown()) }
             }
             v.findViewById<View>(R.id.btnSkipLatest)?.setOnClickListener { service?.skipToLatest() }
+            v.findViewById<View>(R.id.btnReplay)?.setOnClickListener {
+                ttsManager?.replayLast()
+            }
         }
     }
 
@@ -101,7 +104,7 @@ class FloatingWindowManager(private val context: Context) {
 
     private fun updateIcon() {
         val paused = ttsManager?.isPaused() ?: false
-        btnPlay?.text = if (paused) "▶" else "⏸"
+        btnPlay?.text = if (paused) "\u25B6" else "\u23F8"
     }
 
     private fun setupDrag(p: WindowManager.LayoutParams) {
@@ -134,12 +137,12 @@ class FloatingWindowManager(private val context: Context) {
     }
 
     fun updateDanmuCount(count: Long) {
-        tvCount?.post { tvCount?.text = "已读$count" }
+        tvCount?.post { tvCount?.text = "\u5DF2\u8BFB $count" }
         if (collapsed) tvCollapsedCount?.post { tvCollapsedCount?.text = count.toString() }
     }
 
     fun updateSkippedCount(count: Long) {
-        tvSkipped?.post { tvSkipped?.text = "跳过$count" }
+        tvSkipped?.post { tvSkipped?.text = "\u8DF3\u8FC7 $count" }
     }
 
     fun hide() {
