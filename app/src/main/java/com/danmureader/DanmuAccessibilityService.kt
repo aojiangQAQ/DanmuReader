@@ -231,9 +231,8 @@ class DanmuAccessibilityService : AccessibilityService() {
             }
         }
 
-        // 没有分隔符，检查是否是纯弹幕内容（无用户名）
+        // 缺少用户名分隔符的文本不作为弹幕处理。
         if (text.length >= 2) {
-            // 不再默认为"观众"，直接返回null，因为没有用户名的大概率不是弹幕
             return null
         }
         return null

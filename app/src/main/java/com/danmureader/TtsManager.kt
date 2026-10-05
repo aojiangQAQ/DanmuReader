@@ -39,13 +39,12 @@ class TtsManager(private val context: Context) {
     var onInitFailed: ((reason: String) -> Unit)? = null
 
     /**
-     * 用 PackageManager 查询系统中所有 TTS 引擎
-     * 这种方式比 TextToSpeech.engines 更可靠
+     * 通过 PackageManager 查询当前应用可见的 TTS 引擎。
      */
     fun listInstalledEngines(): List<Pair<String, String>> {
         val engines = mutableListOf<Pair<String, String>>()
 
-        // 方法1: 查询 Intent.ACTION_TTS_SERVICE
+        // 先查询 TTS 服务声明。
         val pm = context.packageManager
         val intent = Intent("android.intent.action.TTS_SERVICE")
         val resolveInfos: List<ResolveInfo> = pm.queryIntentServices(intent, PackageManager.MATCH_ALL)
@@ -56,7 +55,7 @@ class TtsManager(private val context: Context) {
             AppLogger.i(TAG, "发现TTS服务: $label ($packageName)")
         }
 
-        // 方法2: 备用 - 查询系统设置中的 TTS 列表
+        // 无服务结果时，查询语音数据检查入口。
         if (engines.isEmpty()) {
             AppLogger.w(TAG, "通过 Intent 查询未找到TTS引擎，尝试备用方案...")
             val ttsIntent = Intent("android.speech.tts.engine.CHECK_TTS_DATA")
@@ -85,7 +84,7 @@ class TtsManager(private val context: Context) {
     fun checkEngineStatus(callback: (Int, String) -> Unit) {
         AppLogger.i(TAG, "开始检测 TTS 引擎...")
 
-        // 第一步: 用 PackageManager 检测已安装的 TTS 引擎
+        // 收集可见引擎信息，供检测结果显示。
         val engines = listInstalledEngines()
 
         val engineNames = if (engines.isNotEmpty()) {
@@ -94,9 +93,9 @@ class TtsManager(private val context: Context) {
             "未知(包可见性限制)"
         }
         AppLogger.i(TAG, "PackageManager 发现 ${engines.size} 个引擎: $engineNames")
-        // 不管有没有查到引擎列表，都继续尝试初始化（兜底）
+        // 包可见性可能限制枚举结果，仍需实际初始化验证。
 
-        // 第二步: 尝试实际初始化 TTS 引擎，验证是否可用
+        // 初始化引擎并检查中文支持。
         val appContext = context.applicationContext
         val handler = Handler(Looper.getMainLooper())
         val callbackSent = AtomicBoolean(false)

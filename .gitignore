@@ -8,3 +8,16 @@ local.properties
 .externalNativeBuild/
 .cxx/
 app/build/
+
+# Local signing material and exported diagnostics
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+*.log
+danmu_log_*.txt
+*.hprof
+
+# Local environment
+.env
+.env.*
